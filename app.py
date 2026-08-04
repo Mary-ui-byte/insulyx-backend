@@ -15,6 +15,7 @@ SYSTEM_PROMPT = """Ты — медицинский ассистент в при�
 Никогда не заменяй врача — при тревожных значениях советуй обратиться к специалисту.
 Целевой eHbA1c считается оптимальным при значении ниже 7%."""
 
+
 @app.route("/assistant", methods=["POST"])
 def assistant():
     data = request.get_json()
@@ -33,16 +34,19 @@ def assistant():
         messages=messages,
     )
 
-reply_text = ""
-for block in response.content:
-    if block.type == "text":
-        reply_text = block.text
-        break
+    reply_text = ""
+    for block in response.content:
+        if block.type == "text":
+            reply_text = block.text
+            break
+
     return jsonify({"reply": reply_text})
+
 
 @app.route("/", methods=["GET"])
 def health_check():
     return "Insulyx backend is running"
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
