@@ -5,9 +5,9 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 client = anthropic.Anthropic(
-       api_key=os.environ["ANTHROPIC_API_KEY"],
-       base_url="https://tooken.club/v1"
-   )
+    api_key=os.environ["ANTHROPIC_API_KEY"],
+    base_url="https://tooken.club/v1"
+)
 
 SYSTEM_PROMPT = """Ты — медицинский ассистент в приложении Insulyx для людей с диабетом 1 типа.
 У тебя есть данные пользователя (последние замеры глюкозы, статистика TIR, eHbA1c).
