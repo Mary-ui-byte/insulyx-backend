@@ -33,7 +33,11 @@ def assistant():
         messages=messages,
     )
 
-    reply_text = response.content[0].text
+    reply_text = ""
+for block in response.content:
+    if block.type == "text":
+        reply_text = block.text
+        break
     return jsonify({"reply": reply_text})
 
 @app.route("/", methods=["GET"])
