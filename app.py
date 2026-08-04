@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 client = anthropic.Anthropic(
     api_key=os.environ["ANTHROPIC_API_KEY"],
-    base_url="https://tooken.club/v1"
+    base_url="https://tooken.club"
 )
 
 SYSTEM_PROMPT = """Ты — медицинский ассистент в приложении Insulyx для людей с диабетом 1 типа.
