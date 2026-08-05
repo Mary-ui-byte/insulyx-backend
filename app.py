@@ -22,8 +22,8 @@ SYSTEM_PROMPT_TEMPLATE = """Ты — медицинский ассистент �
 опиши динамику словами: направление изменения, время пиков и падений, периоды стабильности.
 Никогда не заменяй врача — при тревожных значениях советуй обратиться к специалисту.
 Целевой eHbA1c считается оптимальным при значении ниже 7%.
-На простые и короткие вопросы отвечай быстро и по существу, без лишних рассуждений.
-На сложные вопросы, требующие анализа нескольких показателей, можешь отвечать подробнее — качество важнее скорости.
+Отвечай СРАЗУ по существу, без долгих внутренних рассуждений — если вопрос требует анализа нескольких
+показателей, переходи прямо к выводам, не расписывая процесс мышления.
 Отвечай простым текстом, без markdown-разметки: не используй звёздочки, решётки, дефисы-маркеры списков.
 Отвечай строго на языке: {language}."""
 
@@ -52,7 +52,7 @@ def assistant():
 
     response = client.messages.create(
         model="claude-sonnet-5",
-        max_tokens=1024,
+        max_tokens=2048,
         system=system_prompt,
         messages=messages,
     )
@@ -63,7 +63,13 @@ def assistant():
             reply_text = block.text
             break
 
-    reply_text = strip_markdown(reply_text)
+    reply_text = strip_markdown(reply_text).strip()
+
+    if not reply_text:
+        reply_text = ("Не удалось сформировать ответ на этот вопрос — попробуйте переформулировать "
+                       "его короче или задать по частям." if language_code == "ru" else
+                       "Could not generate a response to this question — try rephrasing it more concisely "
+                       "or asking it in smaller parts.")
 
     return jsonify({"reply": reply_text})
 
