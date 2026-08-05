@@ -10,7 +10,10 @@ client = anthropic.Anthropic(
     base_url="https://tooken.club"
 )
 
-SYSTEM_PROMPT_TEMPLATE = """Ты — медицинский ассистент в приложении Insulyx для людей с диабетом 1 типа.
+SYSTEM_PROMPT_TEMPLATE = """КРИТИЧЕСКИ ВАЖНО: твой ответ должен быть строго на языке "{language}",
+независимо от того, на каком языке написан вопрос пользователя. Это правило приоритетнее всех остальных.
+
+Ты — медицинский ассистент в приложении Insulyx для людей с диабетом 1 типа.
 В начале сообщения пользователя тебе передаётся его имя и подробная сводка данных: замеры глюкозы,
 статистика TIR (время в целевом диапазоне) за сутки и за неделю, суммарные дозы короткого и длинного
 инсулина за сутки и за неделю, последние отдельные записи.
@@ -22,16 +25,19 @@ SYSTEM_PROMPT_TEMPLATE = """Ты — медицинский ассистент �
 опиши динамику словами: направление изменения, время пиков и падений, периоды стабильности.
 Никогда не заменяй врача — при тревожных значениях советуй обратиться к специалисту.
 Целевой eHbA1c считается оптимальным при значении ниже 7%.
-Отвечай СРАЗУ по существу, без долгих внутренних рассуждений — если вопрос требует анализа нескольких
-показателей, переходи прямо к выводам, не расписывая процесс мышления.
-Отвечай простым текстом, без markdown-разметки: не используй звёздочки, решётки, дефисы-маркеры списков.
-Отвечай строго на языке: {language}."""
+Отвечай СРАЗУ по существу, без долгих внутренних рассуждений.
+Отвечай простым текстом, БЕЗ markdown-разметки: никаких звёздочек, решёток, дефисов-маркеров списков —
+пиши обычным текстом, как в разговоре.
+
+Повторяю: язык твоего ответа — строго "{language}", вне зависимости от языка вопроса."""
 
 
 def strip_markdown(text):
-    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
-    text = re.sub(r'\*(.*?)\*', r'\1', text)
-    text = re.sub(r'#{1,6}\s*', '', text)
+    # убираем маркеры разметки полностью, не пытаясь парно сопоставлять — надёжнее на многострочном тексте
+    text = text.replace('**', '')
+    text = re.sub(r'(?<!\S)\*(?!\S)', '', text)  # одиночные * как маркеры списков
+    text = re.sub(r'^\s*#{1,6}\s*', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^\s*-\s+', '', text, flags=re.MULTILINE)
     return text
 
 
@@ -43,11 +49,17 @@ def assistant():
     history = data.get("history", [])
     language_code = data.get("language", "ru")
 
-    language_name = "русский" if language_code == "ru" else "английский (English)"
+    is_english = language_code == "en"
+    language_name = "английский (English)" if is_english else "русский"
     system_prompt = SYSTEM_PROMPT_TEMPLATE.format(language=language_name)
 
+    if is_english:
+        wrapped_message = f"User context:\n{context_summary}\n\nQuestion: {user_message}"
+    else:
+        wrapped_message = f"Контекст пользователя:\n{context_summary}\n\nВопрос: {user_message}"
+
     messages = history + [
-        {"role": "user", "content": f"Контекст пользователя:\n{context_summary}\n\nВопрос: {user_message}"}
+        {"role": "user", "content": wrapped_message}
     ]
 
     response = client.messages.create(
