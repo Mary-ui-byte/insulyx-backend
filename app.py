@@ -1,4 +1,5 @@
 import os
+import re
 import anthropic
 from flask import Flask, request, jsonify
 
@@ -13,7 +14,16 @@ SYSTEM_PROMPT = """Ты — медицинский ассистент в при�
 У тебя есть данные пользователя (последние замеры глюкозы, статистика TIR, eHbA1c).
 Анализируй их, давай мягкие, не диагностические советы, задавай уточняющие вопросы.
 Никогда не заменяй врача — при тревожных значениях советуй обратиться к специалисту.
-Целевой eHbA1c считается оптимальным при значении ниже 7%."""
+Целевой eHbA1c считается оптимальным при значении ниже 7%.
+Отвечай простым текстом, без markdown-разметки: не используй звёздочки, решётки, дефисы-маркеры списков.
+Если нужно что-то выделить, выделяй смыслом фразы, а не символами форматирования."""
+
+
+def strip_markdown(text):
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    text = re.sub(r'\*(.*?)\*', r'\1', text)
+    text = re.sub(r'#{1,6}\s*', '', text)
+    return text
 
 
 @app.route("/assistant", methods=["POST"])
@@ -39,6 +49,8 @@ def assistant():
         if block.type == "text":
             reply_text = block.text
             break
+
+    reply_text = strip_markdown(reply_text)
 
     return jsonify({"reply": reply_text})
 
