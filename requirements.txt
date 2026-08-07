@@ -1,3 +1,6 @@
 flask
 anthropic
 gunicorn
+scikit-learn
+joblib
+numpy
